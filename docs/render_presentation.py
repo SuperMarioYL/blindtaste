@@ -147,6 +147,24 @@ class Painter:
         )
 
 
+# tabler glass-cocktail（tabler/icons，MIT）：项目视觉里唯一的第三方图标，
+# 以调色板描边嵌入，深浅色主题都可读。
+TABLER_COCKTAIL_PATHS = (
+    '<path d="M8 21h8"/><path d="M12 15v6"/>'
+    '<path d="M12 5m-7 0a7 2 0 1 0 14 0a7 2 0 1 0 -14 0"/>'
+    '<path d="M5 5v.388c0 .432 .126 .853 .362 1.206l5 7.509c.633 .951 1.88 1.183 2.785 .517c.191 -.141 .358 -.316 .491 -.517l5 -7.509c.236 -.353 .362 -.774 .362 -1.206v-.388"/>'
+)
+
+
+def tabler_cocktail(painter: Painter, x, y, scale=1.4):
+    return (
+        f'<g transform="translate({x},{y}) scale({scale})" fill="none" '
+        f'stroke="{painter.p["primary"]}" stroke-width="1.8" '
+        f'stroke-linecap="round" stroke-linejoin="round">'
+        f"{TABLER_COCKTAIL_PATHS}</g>"
+    )
+
+
 def svg_document(slug, w, h, title, desc, body, palette_id, bg, animated=True):
     style = f"<style>{ANIMATION_CSS}</style>" if animated else ""
     return (
@@ -182,7 +200,8 @@ def hero_body(painter: Painter, facts, mobile=False):
                 x, chip_y = 40, chip_y + 34
             g.append(p.chip(x, chip_y, cw, chip_text))
             x += cw + 10
-        cx, cy, r = 230, 390, 118
+        g.append(tabler_cocktail(painter, 414, 26, 1.2))
+        cx, cy, r = 230, 398, 116
     else:
         w, h = 960, 430
         g.append(p.grid(w, h))
@@ -196,7 +215,8 @@ def hero_body(painter: Painter, facts, mobile=False):
             cw = 24 + len(chip_text) * 13
             g.append(p.chip(x, 196, cw, chip_text))
             x += cw + 12
-        g.append(p.txt(930, 40, "v0.1 · m1 init+run", 11.5, "muted",
+        g.append(tabler_cocktail(painter, 858, 26, 1.5))
+        g.append(p.txt(930, 52, "v0.1 · m1 init+run", 11.5, "muted",
                        anchor="end", mono=True))
         cx, cy, r = 716, 236, 152
 
