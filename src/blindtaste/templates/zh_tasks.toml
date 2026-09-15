@@ -1,0 +1,207 @@
+# BlindTaste 任务电池内容：问卷问题与四类任务模板。
+# intake.py 读取本文件把问卷答案映射成任务电池；调整文案或增删场景不需要改代码。
+#
+# 约定：
+# - question.multi = true 的题按编号多选（逗号分隔）；applies_to 指向某个
+#   任务 kind，只有该类被选中时才追问。
+# - template.when 形如 "<问题id>=<选项value>"，为空表示该类的通用兜底
+#   模板（每类选 2 条时作为第二条补齐）。
+
+version = 1
+
+[[question]]
+id = "kinds"
+text = "四类高频任务里，哪些你每周都会做？（输入编号，逗号分隔；直接回车 = 全选）"
+multi = true
+default_all = true
+
+  [[question.option]]
+  label = "改简历"
+  value = "resume"
+
+  [[question.option]]
+  label = "写周报"
+  value = "weekly"
+
+  [[question.option]]
+  label = "PPT 大纲"
+  value = "ppt"
+
+  [[question.option]]
+  label = "翻译"
+  value = "translate"
+
+[[question]]
+id = "resume_scene"
+text = "改简历时你最常处理哪种？"
+applies_to = "resume"
+
+  [[question.option]]
+  label = "社招投递"
+  value = "social"
+
+  [[question.option]]
+  label = "校招/实习"
+  value = "campus"
+
+  [[question.option]]
+  label = "晋升述职材料"
+  value = "promotion"
+
+[[question]]
+id = "weekly_scene"
+text = "写周报最费劲的是哪种？"
+applies_to = "weekly"
+
+  [[question.option]]
+  label = "流水账整理成亮点"
+  value = "focus"
+
+  [[question.option]]
+  label = "跨部门信息汇总"
+  value = "cross"
+
+[[question]]
+id = "ppt_scene"
+text = "PPT 大纲多数是给谁看的？"
+applies_to = "ppt"
+
+  [[question.option]]
+  label = "向管理层汇报"
+  value = "business"
+
+  [[question.option]]
+  label = "内部培训课件"
+  value = "training"
+
+[[question]]
+id = "translate_scene"
+text = "翻译最多的是哪类内容？"
+applies_to = "translate"
+
+  [[question.option]]
+  label = "中文商务邮件 → 英文"
+  value = "mail"
+
+  [[question.option]]
+  label = "英文技术文档 → 中文"
+  value = "tech"
+
+[[question]]
+id = "density"
+text = "每类任务放几条进电池？"
+
+  [[question.option]]
+  label = "每类 1 条（4-6 条任务，约 10 分钟）"
+  value = "1"
+
+  [[question.option]]
+  label = "每类 2 条（8-10 条任务，覆盖更稳）"
+  value = "2"
+
+# ---------------------------------------------------------------------------
+# 任务模板。prompt 即盲测时原样发给模型的任务，内嵌素材让回答可直接对比。
+# ---------------------------------------------------------------------------
+
+[[template]]
+kind = "resume"
+id = "resume-social"
+when = "resume_scene=social"
+prompt = """请把以下三段流水账式工作经历改写成社招简历里的项目描述：每段以动词开头、突出可量化结果、不超过三行，最后单独指出一条你建议补充的量化数据缺口。
+
+经历一：负责公司官网改版，跟设计和外包对接，两个月上线。
+经历二：做内部报表工具，把每周手工合并 Excel 的工作自动化了。
+经历三：带两个实习生整理用户反馈。"""
+
+[[template]]
+kind = "resume"
+id = "resume-campus"
+when = "resume_scene=campus"
+prompt = """我是一名应届生，以下是实习经历初稿。请把它改写成校招简历的一段实习描述：动词开头、结果导向、不超过四行，并指出这段经历最缺的一个亮点要素。
+
+实习：在 XX 公司运营部实习三个月，帮忙写了 20 篇公众号推文，参与策划了一次抽奖活动，平时做些数据整理。"""
+
+[[template]]
+kind = "resume"
+id = "resume-promotion"
+when = "resume_scene=promotion"
+prompt = """请把下面这段工作总结改写成晋升述职材料里的核心成果段落：按「背景-动作-结果」组织，突出与上一职级的差异，不超过 150 字。
+
+总结：今年主要负责订单系统重构，把老系统迁到新架构，中间没出大事故，性能也好了些，团队配合也不错。"""
+
+[[template]]
+kind = "resume"
+id = "resume-general"
+when = ""
+prompt = """请审阅下面这份简历片段，指出三个最影响通过率的问题，并把其中一段改写为更有力的版本：
+
+2023.06-至今 XX公司 运营专员：负责公众号日常运营，撰写推文，策划活动，配合团队完成 KPI。"""
+
+[[template]]
+kind = "weekly"
+id = "weekly-focus"
+when = "weekly_scene=focus"
+prompt = """把以下本周工作流水账整理成发给直属上级的周报：按「进展 / 风险 / 下周计划」三段组织，数据放最前面，全文不超过 200 字。
+
+流水账：周一改了两版 banner；周三上线活动页，UV 1.2 万，比上周多 40%；客服反馈配送问题 17 起，已同步物流；周五复盘会延期。"""
+
+[[template]]
+kind = "weekly"
+id = "weekly-cross"
+when = "weekly_scene=cross"
+prompt = """把三个团队本周的零散进展汇总成一页跨部门周报：每团队不超过三行，只保留影响协作的结论，最后列出需要其他团队决策的一件事。
+
+算法侧：模型 A/B 实验跑完，B 组转化率 +2.1%，统计显著。
+工程侧：新推荐服务灰度 50%，错误率持平，预计下周全量。
+运营侧：活动物料因合规审核被退回一次，已改完重提。"""
+
+[[template]]
+kind = "weekly"
+id = "weekly-general"
+when = ""
+prompt = """把下面几条零散记录写成一段可以直接发群里的日报：结论先行、100 字以内，不要保留原始记录的口语。
+
+记录：接口联调完成一半；测试提了 3 个 bug 修完 2 个；产品说需求要变更，还没定。"""
+
+[[template]]
+kind = "ppt"
+id = "ppt-business"
+when = "ppt_scene=business"
+prompt = """为「季度经营回顾」做一份 6 页 PPT 大纲：每页给出标题和 3 个要点，听众是公司管理层，语气务实，最后一页必须是明确的下一步行动建议。"""
+
+[[template]]
+kind = "ppt"
+id = "ppt-training"
+when = "ppt_scene=training"
+prompt = """为新人培训做一份《如何写好一封工作邮件》的课件大纲：共 5 页，每页标题 + 3 个要点，最后附一个反面案例的改写示例。"""
+
+[[template]]
+kind = "ppt"
+id = "ppt-general"
+when = ""
+prompt = """主题是「把周报写短」。请做一份 5 页内部分享的 PPT 大纲：每页标题 + 3 个要点，多用具体例子，少用抽象原则。"""
+
+[[template]]
+kind = "translate"
+id = "translate-mail"
+when = "translate_scene=mail"
+prompt = """把下面这封中文商务邮件翻译成英文：语气专业礼貌，保持分点结构，供应链与交付周期术语准确。
+
+王总您好：
+关于本次订单，有两点需要同步：1. 交付周期因原料到港延迟，预计从 15 天延长至 20 天；2. 我方已协调备用供应商，若贵司接受分批交付，首批可在 10 天内发出。盼复。"""
+
+[[template]]
+kind = "translate"
+id = "translate-tech"
+when = "translate_scene=tech"
+prompt = """把下面的英文技术文档段落翻译成中文：保持原意与术语一致（cache / invalidation / latency），不要增译：
+
+The cache is invalidated lazily: entries are marked stale upon write, and the next read triggers a refresh. This avoids write-path latency at the cost of occasional read spikes."""
+
+[[template]]
+kind = "translate"
+id = "translate-general"
+when = ""
+prompt = """把下面这段产品说明翻译成英文，面向海外用户，语气自然、不逐字直译：
+
+这个功能会把你的重复操作记下来，下次一键重放。你可以随时删除记录，记录只保存在本机。"""
