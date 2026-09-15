@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "blindtaste"
+version = "0.1.0"
+description = "用你自己的任务盲测国产大模型：终端双盲对比 + 断点续跑票仓，生成带信度评分的个人选型报告（v0.1 实现盲测电池）。"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "SuperMarioYL" }]
+keywords = ["llm", "blind-test", "pairwise", "model-selection", "evaluation", "cli"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Natural Language :: Chinese (Simplified)",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Utilities",
+]
+dependencies = [
+  "typer>=0.12",
+  "rich>=13.7",
+  "httpx>=0.27",
+  "pydantic>=2.7",
+]
+
+[project.urls]
+Homepage = "https://github.com/SuperMarioYL/blindtaste"
+Repository = "https://github.com/SuperMarioYL/blindtaste"
+Issues = "https://github.com/SuperMarioYL/blindtaste/issues"
+
+[project.scripts]
+blindtaste = "blindtaste.cli:main"
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/blindtaste"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src",
+  "tests",
+  "examples",
+  "docs",
+  "assets",
+  "LICENSE",
+  "README.md",
+  "README.en.md",
+  "CHANGELOG.md",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
