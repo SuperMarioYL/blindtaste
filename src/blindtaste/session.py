@@ -295,15 +295,29 @@ def run_session(
         console.print(
             Panel(task.prompt, title=f"任务（{task.kind}）", border_style="dim")
         )
-        panels = [
-            Panel(answers["a"], title="回答 A", border_style="cyan"),
-            Panel(answers["b"], title="回答 B", border_style="magenta"),
-        ]
         if console.width >= 90:
-            console.print(Columns(panels, equal=True, expand=True))
+            # 并排半宽面板：盲选的核心就是两份回答的直接对比
+            panel_width = console.width // 2 - 2
+            console.print(
+                Columns(
+                    [
+                        Panel(
+                            answers["a"], title="回答 A",
+                            border_style="cyan", width=panel_width,
+                        ),
+                        Panel(
+                            answers["b"], title="回答 B",
+                            border_style="magenta", width=panel_width,
+                        ),
+                    ],
+                    expand=False,
+                )
+            )
         else:
-            for panel in panels:
-                console.print(panel)
+            for side, style in (("a", "cyan"), ("b", "magenta")):
+                console.print(
+                    Panel(answers[side], title=f"回答 {side.upper()}", border_style=style)
+                )
         pick, think_ms = vote_fn(trial, answers["a"], answers["b"])
         vote = record_vote(trial, pick, think_ms)
         store.append_vote(vote)
