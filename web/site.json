@@ -1,0 +1,293 @@
+{
+  "schema": 3,
+  "name": "BlindTaste",
+  "github": "https://github.com/SuperMarioYL/blindtaste",
+  "palette": "auto",
+  "lang": {
+    "primary": "zh",
+    "toggle": true
+  },
+  "meta": {
+    "visual_profile": "neon-particle",
+    "demo_source": "docs/demo-results.json",
+    "implementation_version": "0.1.0"
+  },
+  "hero": {
+    "eyebrow": {
+      "zh": "国产大模型 · 个人盲测评测",
+      "en": "Personal blind tasting for CN models"
+    },
+    "headline": {
+      "zh": "榜单会被刷分，\n你的口味不会。",
+      "en": "Leaderboards can be farmed.\nYour taste cannot."
+    },
+    "sub": {
+      "zh": "BlindTaste 把改简历、写周报、PPT 大纲、翻译这些高频任务打包成 10 分钟终端盲测：逐对匿名 A/B 投票、票仓断点续跑，先看清你自己任务上的稳定偏好，再决定用哪个模型。v0.1 实现盲测电池（init + run）。",
+      "en": "BlindTaste packs your recurring tasks - resume edits, weekly reports, deck outlines, translation - into a 10-minute terminal blind test: vote on anonymous A/B pairs, resume anytime, and see your stable preference on your own tasks before picking a model. v0.1 ships the blind battery (init + run)."
+    },
+    "href": "#quickstart",
+    "cta": {
+      "zh": "开始盲测",
+      "en": "Start tasting"
+    },
+    "ctaGithub": {
+      "zh": "在 GitHub 查看",
+      "en": "View on GitHub"
+    }
+  },
+  "scene": {
+    "kind": "neon-graph",
+    "fallback": "/assets/presentation/hero-static-dark.svg",
+    "fallbackLight": "/assets/presentation/hero-static-light.svg",
+    "caption": {
+      "zh": "先看清自己的偏好，再谈选型",
+      "en": "See your own preference first, then choose"
+    }
+  },
+  "advantages": [
+    {
+      "title": {
+        "zh": "测的是你的任务，不是榜单的任务",
+        "en": "Your tasks, not the benchmark's"
+      },
+      "body": {
+        "zh": "8 道中文选择题圈出你每周真会做的任务（改简历/周报/PPT 大纲/翻译 + 自定义），生成 6-10 条任务电池；聚合榜单回答不了「哪个改我的简历更好」，电池回答得了。",
+        "en": "Eight questions pin down the tasks you actually do every week (resume edits, weekly reports, deck outlines, translation, plus custom), building a 6-10 task battery. Aggregate boards cannot answer which one edits your resume better; your battery can."
+      }
+    },
+    {
+      "title": {
+        "zh": "双盲投票，票后才揭晓",
+        "en": "Blind vote, reveal afterwards"
+      },
+      "body": {
+        "zh": "票面只见匿名 A/B，两份回答并排对比、两次按键内投票；每张票记录盲序、选择与思考时长，投票后才揭晓模型——不请 LLM 当裁判，因为裁判互相附和不等于正确。",
+        "en": "The ballot shows only anonymous A/B, two answers side by side, two keystrokes per vote; each vote records blind order, pick and think time, and models are revealed only after voting. No LLM judge - judges agreeing does not make them right."
+      }
+    },
+    {
+      "title": {
+        "zh": "票仓断点续跑，可复核",
+        "en": "Append-only vault, resumable"
+      },
+      "body": {
+        "zh": "votes.jsonl 追加式落盘，按 trial_id 去重，Ctrl-C 之后重跑自动接上；trial 由电池内容指纹确定性生成，同一电池永远得到同一批对局。",
+        "en": "votes.jsonl is an append-only store deduped by trial id; Ctrl-C and re-run picks up exactly where you stopped. Trials derive deterministically from the battery fingerprint, so the same battery always yields the same pairs."
+      }
+    }
+  ],
+  "story": {
+    "intro": {
+      "title": {
+        "zh": "先看清自己的偏好，再谈选型",
+        "en": "See your own preference first"
+      },
+      "body": {
+        "zh": "国产旗舰全部免费、每月轮换，「哪个改我的周报更好」每个月都要重新回答一次。榜单会被刷分，裁判会互相附和，双开肉眼对比又受单次噪声影响。BlindTaste 把 Chatbot Arena 验证过的匿名双选机制下沉到个人：你的任务、你的票、你的电池。v0.1 交付盲测电池与票仓，重测信度评分与个人选型报告在 m2。",
+        "en": "Every CN flagship is free and the rotation is monthly, so \"which one writes my weekly report better\" needs re-answering every drop. Leaderboards can be farmed, judges echo each other, and eyeballing two tabs is single-trial noise. BlindTaste brings the Arena-proven anonymous pairwise mechanism down to the personal scale: your tasks, your votes, your battery. v0.1 ships the battery and vote vault; retest reliability and the personal report land in m2."
+      }
+    },
+    "sections": [
+      {
+        "title": {
+          "zh": "一次盲测的旅程",
+          "en": "One tasting round"
+        },
+        "body": {
+          "zh": "init 问卷生成电池，run 逐对盲选（约 15 对、10 分钟），每张票立即落盘；中断后重跑从上次进度继续。回答缓存按（模式, 模型, 任务）复用，同一任务不重复烧 API。",
+          "en": "init builds the battery, run walks the pairs (about 15, 10 minutes), each vote hits disk immediately; interrupt and re-run resumes. Answer caching is keyed by (mode, model, task), so the same task never burns the API twice."
+        },
+        "image": {
+          "light": "/assets/presentation/process-light.svg",
+          "dark": "/assets/presentation/process-dark.svg",
+          "alt": {
+            "zh": "init、run、投票落盘、续跑的流程",
+            "en": "init, run, vote recording and resume flow"
+          },
+          "mobile": {
+            "light": "/assets/presentation/process-mobile-light.svg",
+            "dark": "/assets/presentation/process-mobile-dark.svg"
+          }
+        }
+      },
+      {
+        "title": {
+          "zh": "模块分工",
+          "en": "How the pieces fit"
+        },
+        "body": {
+          "zh": "intake 负责问卷与电池，session 调度盲测对局并维护票仓，providers 把五家官方 OpenAI 兼容端点统一在一个接口后面（方舟未验证、best-effort），scoring 统计票面（m2 补 BT 排名与重测信度），report 是 m2 的报告出口。",
+          "en": "intake owns the questionnaire and battery, session schedules pairs and keeps the vote vault, providers puts all five official OpenAI-compatible endpoints behind one interface (Ark unverified, best-effort), scoring tallies votes (m2 adds BT ranking and retest reliability), report is the m2 outlet."
+        },
+        "image": {
+          "light": "/assets/presentation/architecture-light.svg",
+          "dark": "/assets/presentation/architecture-dark.svg",
+          "alt": {
+            "zh": "cli、intake、session、providers、scoring、report 的数据流",
+            "en": "Data flow across cli, intake, session, providers, scoring, report"
+          },
+          "mobile": {
+            "light": "/assets/presentation/architecture-mobile-light.svg",
+            "dark": "/assets/presentation/architecture-mobile-dark.svg"
+          }
+        }
+      },
+      {
+        "title": {
+          "zh": "已接入的模型与边界",
+          "en": "Wired models and limits"
+        },
+        "body": {
+          "zh": "智谱（免费档）、DeepSeek、通义百炼、Kimi 走各自官方兼容端点；火山方舟（豆包）兼容性未验证，未配置 key 时给出明确错误，配置后仅 best-effort。另有 --demo 离线模拟适配器，不配 key 也能走通全流程。",
+          "en": "Zhipu (free tier), DeepSeek, Qwen via Bailian, and Kimi use their official compatible endpoints; Volcengine Ark (Doubao) is unverified - it fails loudly when unconfigured and stays best-effort when configured. A --demo offline adapter walks the whole flow without any key."
+        },
+        "image": {
+          "light": "/assets/presentation/integrations-light.svg",
+          "dark": "/assets/presentation/integrations-dark.svg",
+          "alt": {
+            "zh": "五家模型接入与离线演示适配器",
+            "en": "Five model integrations plus the offline demo adapter"
+          },
+          "mobile": {
+            "light": "/assets/presentation/integrations-mobile-light.svg",
+            "dark": "/assets/presentation/integrations-mobile-dark.svg"
+          }
+        }
+      }
+    ],
+    "details": [
+      {
+        "title": {
+          "zh": "配置与边界",
+          "en": "Configuration and limits"
+        },
+        "body": {
+          "zh": "key 粘贴到 ~/.blindtaste/keys.env（ZHIPU_API_KEY=…），状态目录可用 BLINDTASTE_HOME 或 --home 覆盖。v0.1 只实现 m1：完整报告、重测一致率、噪声任务与榜单分歧表在 m2；--demo 的模拟回答不代表任何真实模型表现。",
+          "en": "Paste keys into ~/.blindtaste/keys.env (ZHIPU_API_KEY=...); state directory can be overridden via BLINDTASTE_HOME or --home. v0.1 implements m1 only: the full report, retest agreement, noise tasks and index disagreement land in m2; --demo answers represent no real model."
+        }
+      }
+    ]
+  },
+  "demo": {
+    "title": {
+      "zh": "运行真实记录",
+      "en": "Recorded run"
+    },
+    "note": {
+      "zh": "v0.1（m1）的真实终端输出：init → run --demo（3 票）→ 断点续跑（2 票）→ report。run 用离线模拟回答，不调用 API、不需要 key；问卷与投票输入以管道喂入，交互使用时逐题手输。",
+      "en": "Real v0.1 (m1) terminal output: init -> run --demo (3 votes) -> resume (2 votes) -> report. run uses the offline demo adapter - no API, no keys; questionnaire and vote input is piped in the recording, typed interactively in normal use."
+    },
+    "source": "https://github.com/SuperMarioYL/blindtaste/blob/main/docs/demo-results.json",
+    "steps": [
+      {
+        "label": {
+          "zh": "init：8 道选择题 → 任务电池",
+          "en": "init: 8 questions -> task battery"
+        },
+        "body": {
+          "zh": "问卷圈出你的四类高频任务（改简历/周报/PPT 大纲/翻译）与场景，生成 6-10 条任务的电池并选定 3 家参测模型。演示输入选择了全部四类、每类 2 条、智谱/DeepSeek/Kimi 三家。",
+          "en": "The questionnaire pins down your four recurring task kinds and their scenarios, builds a 6-10 task battery and picks 3 models. This recorded input selected all four kinds, 2 tasks each, and Zhipu/DeepSeek/Kimi."
+        },
+        "image": "/assets/presentation/demo-init-light.svg",
+        "imageDark": "/assets/presentation/demo-init-dark.svg",
+        "command": "printf '1,2,3,4\\n1\\n1\\n1\\n1\\n2\\n\\n1,2,4\\n' | blindtaste init",
+        "output": "  1. 智谱 GLM-4-Flash（glm-4-flash-250414） · 有免费档\n✓ 电池已生成：8 条任务（resume × 2、weekly × 2、ppt × 2、translate × \n首轮盲测约 15 对。\n下一步：把 1-2 个 API key 粘贴到 /tmp/bt-demo-final/keys.env，例如\n  ZHIPU_API_KEY=sk-xxx\n智谱 glm-4-flash-250414 有免费档；然后运行 blindtaste run。不配 key 也可以先 "
+      },
+      {
+        "label": {
+          "zh": "run：匿名 A/B 盲选",
+          "en": "run: anonymous A/B tasting"
+        },
+        "body": {
+          "zh": "每对先展示任务与两份匿名回答（并排半宽面板），两次按键内投票，投票后立即揭晓 A/B 背后的模型。演示用 --demo 离线模拟回答，不调用任何 API。",
+          "en": "Each pair shows the task and two anonymous answers side by side; you vote in two keystrokes and the models behind A/B are revealed right after. This recording uses --demo offline answers, no API calls."
+        },
+        "image": "/assets/presentation/demo-run-light.svg",
+        "imageDark": "/assets/presentation/demo-run-dark.svg",
+        "command": "printf 'a\\nb\\ntie\\n' | blindtaste run --demo --limit 3",
+        "output": "── 对 1/3 · 任务 translate-general\n╭───────────────────────────── 任务（translate） ──────────────────────────────╮\n│ 把下面这段产品说明翻译成英文，面向海外用户，语气自然、不逐字直译：           │\n│                                                                              │\n│ 这个功能会把你的重复操作记下来，下次一键重放。你可以随时删除记录，记录只保存 │\n│ 在本机。                                                                     │\n╰──────────────────────────────────────────────────────────────────────────────╯\n╭─────────────────────────────────── 回答 A ───────────────────────────────────╮\n│ 〔结构式 ·                                                                   │\n│ 演示回答〕围绕「把下面这段产品说明翻译成英文，面向海外用户，语气」，我的处理 │\n│ 思路是：                                                                     │\n│ 一、对照原始素材逐条核对，避免漏项                                           │\n│ 二、补一条缺失的量化口径建议                                                 │\n│ 三、区分事实陈述与主观判断                                                   │\n│ （--demo 模拟回答，不调用任何 API）                                          │\n╰──────────────────────────────────────────────────────────────────────────────╯\n╭─────────────────────────────────── 回答 B ───────────────────────────────────╮\n│ 〔分点式 ·                                                                   │\n│ 演示回答〕先说结论，再给方案——针对「把下面这段产品说明翻译成英文，面向海外用 │\n│ 户，语气」：                                                                 │\n│ ① 保留原始措辞中的关键动作动词                                               │\n│ ② 区分事实陈述与主观判断                                                     │\n│ ③ 按影响面排序，先处理可量化的部分                                           │\n│ （--demo 模拟回答，不调用任何 API）                                          │\n╰──────────────────────────────────────────────────────────────────────────────╯\n哪份回答更好？ [a/b/tie]: ✓ 已记录 揭晓：A = DeepSeek · B = 智谱 GLM-4-Flash\n\n……（第 2、3 对交互相同，见 docs/demo/battery-run.gif）……\n\n本轮完成：新投 3 对，累计 3/15。\n随时 Ctrl-C 中断，重跑 blindtaste run 会从 3/15 继续。"
+      },
+      {
+        "label": {
+          "zh": "断点续跑",
+          "en": "Resume where you stopped"
+        },
+        "body": {
+          "zh": "Ctrl-C 随时中断：票仓按 trial_id 去重，重跑 run 自动从已完成的对数继续。演示里第二轮 run 从 3/15 接着投。",
+          "en": "Ctrl-C anytime: the vote store dedupes by trial id, so re-running picks up where you stopped. Here the second run resumes from 3/15."
+        },
+        "image": "/assets/presentation/demo-resume-light.svg",
+        "imageDark": "/assets/presentation/demo-resume-dark.svg",
+        "command": "printf 'b\\na\\n' | blindtaste run --demo --limit 2",
+        "output": "第 1 轮盲测：共 15 对，已完成 3 对，待投 12 对。\n本轮完成：新投 2 对，累计 5/15。\n随时 Ctrl-C 中断，重跑 blindtaste run 会从 5/15 继续。"
+      },
+      {
+        "label": {
+          "zh": "report：进度与票面统计",
+          "en": "report: progress and tally"
+        },
+        "body": {
+          "zh": "v0.1 的 report 展示电池、首轮进度与聚合榜单快照状态；带重测信度评分的完整个人选型报告（BT 排名、噪声任务、与 Intelligence Index 式榜单的分歧表）在 m2 交付。",
+          "en": "In v0.1 report shows the battery, round-1 progress and index snapshot status; the full reliability-scored personal report (BT ranking, noise tasks, disagreements vs Intelligence Index style boards) lands in m2."
+        },
+        "image": "/assets/presentation/demo-report-light.svg",
+        "imageDark": "/assets/presentation/demo-report-dark.svg",
+        "command": "blindtaste report",
+        "output": "电池：8 条任务 × 3 家模型；首轮进度 5 对。\n随时 Ctrl-C 中断，重跑 blindtaste run 会从 5/15 继续。\n聚合榜单快照：未抄录（分歧表待 m2）。\n\n完整个人选型报告属 m2 里程碑，v0.1 尚未实现：BT \n个人排名、每类任务冠军、重测一致率信度分、噪声任务警示，以及与 Artificial \nAnalysis 的 Intelligence Index 式聚合榜单的分歧表，将导出为 report.md / \nreport.html。"
+      }
+    ]
+  },
+  "quickstart": {
+    "title": {
+      "zh": "10 分钟跑通",
+      "en": "Run it in 10 minutes"
+    },
+    "body": {
+      "zh": "需要 Python 3.12+。不配 key 也能先跑 --demo；正式盲测把 1-2 个 key 粘贴进 ~/.blindtaste/keys.env（智谱 glm-4-flash-250414 有免费档）。",
+      "en": "Requires Python 3.12+. --demo works without keys; for a real tasting paste 1-2 keys into ~/.blindtaste/keys.env (Zhipu glm-4-flash-250414 has a free tier)."
+    },
+    "steps": [
+      {
+        "title": {
+          "zh": "安装",
+          "en": "Install"
+        },
+        "code": "git clone https://github.com/SuperMarioYL/blindtaste.git\ncd blindtaste\nuv tool install .   # 或 pip install -e ."
+      },
+      {
+        "title": {
+          "zh": "建电池并盲测",
+          "en": "Build the battery and taste"
+        },
+        "code": "blindtaste init            # 8 道选择题 -> 任务电池\n# 把 key 粘贴到 ~/.blindtaste/keys.env\nblindtaste run             # 匿名 A/B 盲选，Ctrl-C 可中断续跑"
+      },
+      {
+        "title": {
+          "zh": "先离线体验",
+          "en": "Try it offline first"
+        },
+        "code": "blindtaste run --demo --limit 2   # 不配 key、不调用 API\nblindtaste report                 # 进度与票面统计"
+      }
+    ]
+  },
+  "limitations": [
+    {
+      "zh": "v0.1 只实现 m1（init + run 盲测电池）；retest 重测一致率与 report 完整报告在 m2 交付。",
+      "en": "v0.1 implements m1 only (init + run blind battery); retest reliability and the full report land in m2."
+    },
+    {
+      "zh": "正式盲测需要各家官方 API key；--demo 的模拟回答不代表任何真实模型表现。",
+      "en": "Real tasting needs official API keys; --demo answers represent no real model."
+    },
+    {
+      "zh": "火山方舟（豆包）的 OpenAI 兼容性未验证，属 best-effort 接入。",
+      "en": "Volcengine Ark (Doubao) OpenAI compatibility is unverified and best-effort."
+    }
+  ],
+  "footer": {
+    "tag": {
+      "zh": "Python 3.12+ · MIT",
+      "en": "Python 3.12+ · MIT"
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "name": "BlindTaste",
+  "tagline": "用你自己的任务盲测国产大模型：榜单会被刷分，你的口味不会。",
+  "hero": {
+    "mark": "盲",
+    "advantage": "10 分钟终端盲测，输出你自己任务上的稳定偏好",
+    "chips": ["双盲 A/B 投票", "票仓断点续跑", "m1：init + run"]
+  },
+  "architecture": {
+    "title": "BlindTaste / 数据流",
+    "nodes": [
+      {
+        "title": "cli（typer）",
+        "detail": "init / run / retest / report 四个入口"
+      },
+      {
+        "title": "intake 问卷",
+        "detail": "8 道选择题 → battery.json（6-10 条任务）"
+      },
+      {
+        "title": "session 盲测调度",
+        "detail": "指纹派生 trial · 盲序 · 票仓读写"
+      },
+      {
+        "title": "providers 适配",
+        "detail": "ChatAdapter 统一五家 OpenAI 兼容端点 + --demo 离线适配"
+      },
+      {
+        "title": "scoring 统计",
+        "detail": "m1 胜负平/胜率；m2 BT 排名 + 重测信度"
+      },
+      {
+        "title": "report 报告",
+        "detail": "m2 出口：md/html + 榜单分歧表（快照内置）"
+      }
+    ],
+    "edges": [
+      [0, 1],
+      [0, 2],
+      [2, 3],
+      [1, 2],
+      [2, 4],
+      [4, 5]
+    ]
+  },
+  "process": {
+    "title": "BlindTaste / 一次盲测",
+    "steps": [
+      {
+        "title": "init 建电池",
+        "detail": "8 道选择题圈出四类高频任务与场景"
+      },
+      {
+        "title": "run 匿名盲选",
+        "detail": "约 15 对并排 A/B，两次按键内投票"
+      },
+      {
+        "title": "投票即落盘",
+        "detail": "votes.jsonl 追加写入，Ctrl-C 可中断"
+      },
+      {
+        "title": "续跑与揭晓",
+        "detail": "重跑自动接上；票后揭晓模型与票面统计"
+      }
+    ],
+    "result": "记录自 docs/demo-results.json：run --demo 新投 3 对累计 3/15，重跑 run 从 3/15 继续。"
+  },
+  "integrations": {
+    "title": "BlindTaste / 已实现接入",
+    "items": [
+      {
+        "title": "智谱 GLM",
+        "detail": "glm-4-flash · 有免费档 · 官方兼容端点"
+      },
+      {
+        "title": "DeepSeek",
+        "detail": "官方 API · 按 token 计费"
+      },
+      {
+        "title": "通义（百炼）",
+        "detail": "兼容模式端点"
+      },
+      {
+        "title": "Kimi",
+        "detail": "Moonshot 官方端点"
+      },
+      {
+        "title": "豆包（方舟）",
+        "detail": "兼容性未验证 · best-effort"
+      },
+      {
+        "title": "--demo 离线适配",
+        "detail": "确定性模拟回答 · 零 key 走通全流程"
+      }
+    ]
+  }
+}
