@@ -14,7 +14,7 @@ import pytest
 from rich.console import Console
 from typer.testing import CliRunner
 
-from blindtaste import intake, providers, scoring, session
+from blindtaste import __version__, intake, providers, scoring, session
 from blindtaste.cli import app
 from blindtaste.intake import Battery, TaskItem, build_battery, battery_fingerprint
 from blindtaste.providers import (
@@ -426,9 +426,10 @@ def test_openai_adapter_request_and_errors() -> None:
 
 
 def test_cli_version() -> None:
+    """--version 打印包自身的 __version__（单一来源，不在这里硬编码版本号）。"""
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.output
+    assert __version__ in result.output
 
 
 def test_cli_init_questionnaire_creates_battery(store: SessionStore) -> None:

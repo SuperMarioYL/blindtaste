@@ -10,7 +10,7 @@
   "meta": {
     "visual_profile": "neon-particle",
     "demo_source": "docs/demo-results.json",
-    "implementation_version": "0.1.0"
+    "implementation_version": "0.2.0"
   },
   "hero": {
     "eyebrow": {
@@ -22,8 +22,8 @@
       "en": "Leaderboards can be farmed.\nYour taste cannot."
     },
     "sub": {
-      "zh": "BlindTaste 把改简历、写周报、PPT 大纲、翻译这些高频任务打包成 10 分钟终端盲测：逐对匿名 A/B 投票、票仓断点续跑，先看清你自己任务上的稳定偏好，再决定用哪个模型。v0.1 实现盲测电池（init + run）。",
-      "en": "BlindTaste packs your recurring tasks - resume edits, weekly reports, deck outlines, translation - into a 10-minute terminal blind test: vote on anonymous A/B pairs, resume anytime, and see your stable preference on your own tasks before picking a model. v0.1 ships the blind battery (init + run)."
+      "zh": "BlindTaste 把改简历、写周报、PPT 大纲、翻译这些高频任务打包成 10 分钟终端盲测：逐对匿名 A/B 投票、票仓断点续跑，先看清你自己任务上的稳定偏好，再决定用哪个模型。v0.2 修复输入与状态的错误路径（能力仍是 m1：init + run）。",
+      "en": "BlindTaste packs your recurring tasks - resume edits, weekly reports, deck outlines, translation - into a 10-minute terminal blind test: vote on anonymous A/B pairs, resume anytime, and see your stable preference on your own tasks before picking a model. v0.2 hardens the input and state error paths (capability is still m1: init + run)."
     },
     "href": "#quickstart",
     "cta": {
@@ -162,8 +162,8 @@
           "en": "Configuration and limits"
         },
         "body": {
-          "zh": "key 粘贴到 ~/.blindtaste/keys.env（ZHIPU_API_KEY=…），状态目录可用 BLINDTASTE_HOME 或 --home 覆盖。v0.1 只实现 m1：完整报告、重测一致率、噪声任务与榜单分歧表在 m2；--demo 的模拟回答不代表任何真实模型表现。",
-          "en": "Paste keys into ~/.blindtaste/keys.env (ZHIPU_API_KEY=...); state directory can be overridden via BLINDTASTE_HOME or --home. v0.1 implements m1 only: the full report, retest agreement, noise tasks and index disagreement land in m2; --demo answers represent no real model."
+          "zh": "key 粘贴到 ~/.blindtaste/keys.env（ZHIPU_API_KEY=…），状态目录可用 BLINDTASTE_HOME 或 --home 覆盖。v0.2 只修错误路径，能力仍是 m1：完整报告、重测一致率、噪声任务与榜单分歧表在 m2；--demo 的模拟回答不代表任何真实模型表现。",
+          "en": "Paste keys into ~/.blindtaste/keys.env (ZHIPU_API_KEY=...); state directory can be overridden via BLINDTASTE_HOME or --home. v0.2 fixes error paths only, still m1 capability: the full report, retest agreement, noise tasks and index disagreement land in m2; --demo answers represent no real model."
         }
       }
     ]
@@ -272,8 +272,8 @@
   },
   "limitations": [
     {
-      "zh": "v0.1 只实现 m1（init + run 盲测电池）；retest 重测一致率与 report 完整报告在 m2 交付。",
-      "en": "v0.1 implements m1 only (init + run blind battery); retest reliability and the full report land in m2."
+      "zh": "v0.2 只修错误路径，能力仍是 m1（init + run 盲测电池）；retest 重测一致率与 report 完整报告在 m2 交付。",
+      "en": "v0.2 fixes error paths only, still m1 capability (init + run blind battery); retest reliability and the full report land in m2."
     },
     {
       "zh": "正式盲测需要各家官方 API key；--demo 的模拟回答不代表任何真实模型表现。",

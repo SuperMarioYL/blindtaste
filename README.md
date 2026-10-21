@@ -12,7 +12,7 @@
 **用你自己的任务盲测国产大模型：改简历、写周报、PPT 大纲、翻译，逐对匿名 A/B 投票，先看清你自己任务上的稳定偏好，再决定用哪个模型。**
 
 <p>
-  <img src="https://img.shields.io/badge/version-0.1.0-blue" alt="version 0.1.0">
+  <img src="https://img.shields.io/badge/version-0.2.0-blue" alt="version 0.2.0">
   <img src="https://img.shields.io/badge/python-3.12+-3776AB" alt="python 3.12+">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
   <img src="https://img.shields.io/github/actions/workflow/status/SuperMarioYL/blindtaste/ci.yml?branch=main&label=ci" alt="ci status">
@@ -173,7 +173,7 @@ blindtaste report                                      # （m2 占位）当前�
 
 ## 能力与边界
 
-| 能力 | v0.1（本版） | m2（规划） |
+| 能力 | v0.2（本版） | m2（规划） |
 | --- | :---: | :---: |
 | 问卷生成任务电池（4 类 + 自定义） | ✓ | |
 | 匿名 A/B 盲选 + 投票后揭晓 | ✓ | |
@@ -205,7 +205,8 @@ blindtaste report                                      # （m2 占位）当前�
 
 ## 路线图
 
-- [x] **m1 盲测电池**（本版）：init 问卷 + run 匿名盲选 + 票仓断点续跑 + 离线演示
+- [x] **m1 盲测电池**：init 问卷 + run 匿名盲选 + 票仓断点续跑 + 离线演示
+- [x] **v0.2 错误路径修复**：`--models` 覆盖去重且至少两家、种子文件与损坏票仓干净报错、版本 lockstep 测试
 - [ ] **m2 重测与信度**：`retest` 随机重测（盲序翻转）、重测一致率信度分、噪声任务警示、`report` 导出 md/html、与聚合榜单的分歧表
 - [ ] **m3 发布套件**：种子报告《30 个真实职场任务盲测：个人排名与 Intelligence Index 的三处分歧》、Gitee 镜像、PyPI 发布（`uvx blindtaste` 一键运行）
 
@@ -221,7 +222,7 @@ blindtaste report                                      # （m2 占位）当前�
 
 ```bash
 uv venv && uv pip install -e ".[test]"
-pytest                      # 26 项测试，模型调用全部替身，无网络、无 key
+pytest                      # 40 项测试，模型调用全部替身，无网络、无 key
 ```
 
 演示资产（SVG 图组与终端 GIF）由 [docs/render_presentation.py](docs/render_presentation.py) 与 [docs/demo.tape](docs/demo.tape) 生成，调色板来自渲染器（`web/palette.json`）。

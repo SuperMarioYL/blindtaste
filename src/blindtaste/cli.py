@@ -19,7 +19,7 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 from . import __version__
-from .intake import Battery, run_questionnaire, run_seed_intake
+from .intake import MIN_MODELS, Battery, run_questionnaire, run_seed_intake
 from .providers import MODELS, ProviderError, build_adapters, effective_keys
 from .scoring import tally_votes
 from .session import (
@@ -53,6 +53,20 @@ def _root(
 
 def _store_for(home: Path | None) -> SessionStore:
     return SessionStore(home_dir(home))
+
+
+def _load_votes(store: SessionStore) -> list[Vote]:
+    """读取票仓；损坏时给出干净的错误信息并退出，而不是把异常抛到栈外。
+
+    票仓是本工具唯一的持久状态，追加写被中断（Ctrl-C、磁盘满）会留下半行；
+    :meth:`SessionStore.load_votes` 已经为此写好了解释性错误，这里只负责把它
+    呈现给用户。
+    """
+    try:
+        return store.load_votes()
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(code=1)
 
 
 def _print_battery_summary(battery: Battery) -> None:
@@ -90,6 +104,12 @@ def init(
     except EOFError:
         console.print("[red]输入提前结束，电池未保存。[/]")
         raise typer.Exit(code=1)
+    except ValueError as exc:
+        # 种子文件的 kind / prompt / TOML 语法问题都抛 ValueError
+        # （tomllib.TOMLDecodeError 也是 ValueError 子类）：把已经写好的
+        # 解释性信息呈现出来，不要抛栈。
+        console.print(f"[red]{exc}[/]")
+        raise typer.Exit(code=1)
     store.save_battery(battery)
     _print_battery_summary(battery)
     store_home = store.home
@@ -102,14 +122,28 @@ def init(
 
 
 def _resolve_models(battery: Battery, models_override: str | None) -> Battery:
-    """--models 覆盖本次运行的参测模型（不回写电池）。"""
+    """--models 覆盖本次运行的参测模型（不回写电池）。
+
+    去重后至少要有 MIN_MODELS 家：少于两家无法配对；重复 id 会让同一家模型
+    和自己盲测——票面两侧回答完全相同，票仓里落一条无意义的胜负。
+    """
     if not models_override:
         return battery
-    ids = [part.strip() for part in models_override.replace("，", ",").split(",") if part.strip()]
+    ids: list[str] = []
+    for part in models_override.replace("，", ",").split(","):
+        model_id = part.strip()
+        if model_id and model_id not in ids:
+            ids.append(model_id)
     unknown = [i for i in ids if i not in MODELS]
     if unknown:
         console.print(
             f"[red]未知模型：{', '.join(unknown)}[/]；可选：{', '.join(MODELS)}"
+        )
+        raise typer.Exit(code=1)
+    if len(ids) < MIN_MODELS:
+        console.print(
+            f"[red]至少需要 {MIN_MODELS} 家不同的模型才能配对盲测[/]，"
+            f"当前只解析到 {len(ids)} 家。"
         )
         raise typer.Exit(code=1)
     return battery.model_copy(
@@ -191,6 +225,8 @@ def run(
         )
         raise typer.Exit(code=1)
     battery = _resolve_models(battery, models)
+    # 先验票仓：损坏时在任何 API key / 适配器工作之前就干净退出。
+    _load_votes(store)
     try:
         adapters = build_adapters(
             [m.id for m in battery.models],
@@ -211,7 +247,7 @@ def run(
             demo=demo,
         )
     except (KeyboardInterrupt, EOFError):
-        voted = store.load_votes()
+        voted = _load_votes(store)
         done = sum(1 for v in voted if v.round == 1)
         console.print(
             f"\n[yellow]已中断，进度已保存：{done} 对已投票，"
@@ -222,7 +258,7 @@ def run(
         completed=result.completed,
         total=result.total_trials,
         voted_now=len(result.voted),
-        votes=store.load_votes(),
+        votes=_load_votes(store),
         battery=battery,
     )
 
@@ -236,7 +272,7 @@ def retest(
     """（m2）随机重测：盲序翻转 + 重测一致率（个人信度分）。"""
     store = _store_for(home)
     battery = store.load_battery()
-    votes = store.load_votes()
+    votes = _load_votes(store)
     done = sum(1 for v in votes if v.round == 1)
     if battery is None or done == 0:
         console.print(
@@ -270,7 +306,7 @@ def report(
             "[red]还没有任务电池。[/]先运行 [bold]blindtaste init[/]。"
         )
         raise typer.Exit(code=1)
-    votes = store.load_votes()
+    votes = _load_votes(store)
     done = sum(1 for v in votes if v.round == 1)
     console.print(
         f"电池：{len(battery.tasks)} 条任务 × {len(battery.models)} 家模型；"

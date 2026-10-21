@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "blindtaste"
-version = "0.1.0"
+version = "0.2.0"
 description = "用你自己的任务盲测国产大模型：终端双盲对比 + 断点续跑票仓，生成带信度评分的个人选型报告（v0.1 实现盲测电池）。"
 readme = "README.md"
 requires-python = ">=3.12"
