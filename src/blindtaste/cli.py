@@ -166,12 +166,24 @@ def _print_run_summary(
     voted_now: int,
     votes: list[Vote],
     battery: Battery,
+    mode: str = "live",
+    skipped: int = 0,
 ) -> None:
+    """票面统计只读当前模式的票：演示票与真实票不混算。"""
     label_by_id = {m.id: m.label for m in battery.models}
+    counted = [v for v in votes if v.round == 1 and v.mode == mode]
+    other_mode = sum(1 for v in votes if v.round == 1 and v.mode != mode)
     if voted_now:
         console.print(
             f"\n[bold]本轮完成[/]：新投 {voted_now} 对，累计 {completed}/{total}。"
         )
+    if skipped:
+        console.print(
+            f"[yellow]{skipped} 对因模型调用失败被跳过（未落票），重跑会重试。[/]"
+        )
+    if other_mode:
+        label = "--demo 模拟票" if mode == "live" else "真实盲测票"
+        console.print(f"[dim]另有 {other_mode} 张 {label}不计入本次统计。[/]")
     if completed < total:
         console.print(
             f"随时 Ctrl-C 中断，重跑 [bold]blindtaste run[/] 会从 "
@@ -183,7 +195,7 @@ def _print_run_summary(
     for column in ("模型", "胜", "平", "负", "胜率"):
         table.add_column(column, justify="left" if column == "模型" else "right")
     for model_id, tally in sorted(
-        tally_votes([v for v in votes if v.round == 1]).items(),
+        tally_votes(counted).items(),
         key=lambda item: item[1].winrate,
         reverse=True,
     ):
@@ -227,6 +239,7 @@ def run(
     battery = _resolve_models(battery, models)
     # 先验票仓：损坏时在任何 API key / 适配器工作之前就干净退出。
     _load_votes(store)
+    mode = "demo" if demo else "live"
     try:
         adapters = build_adapters(
             [m.id for m in battery.models],
@@ -248,7 +261,7 @@ def run(
         )
     except (KeyboardInterrupt, EOFError):
         voted = _load_votes(store)
-        done = sum(1 for v in voted if v.round == 1)
+        done = sum(1 for v in voted if v.round == 1 and v.mode == mode)
         console.print(
             f"\n[yellow]已中断，进度已保存：{done} 对已投票，"
             "重跑 blindtaste run 自动续上。[/]"
@@ -260,7 +273,15 @@ def run(
         voted_now=len(result.voted),
         votes=_load_votes(store),
         battery=battery,
+        mode=mode,
+        skipped=result.skipped,
     )
+    if result.skipped and not result.voted:
+        console.print(
+            "[red]本轮所有对局都因模型调用失败被跳过，一对也没有投成。[/]"
+            "检查 key / 网络后重跑 [bold]blindtaste run[/]。"
+        )
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -273,7 +294,7 @@ def retest(
     store = _store_for(home)
     battery = store.load_battery()
     votes = _load_votes(store)
-    done = sum(1 for v in votes if v.round == 1)
+    done = sum(1 for v in votes if v.round == 1 and v.mode == "live")
     if battery is None or done == 0:
         console.print(
             "[red]还没有首轮盲测记录。[/]先运行 [bold]blindtaste init[/] 和 "
@@ -283,7 +304,7 @@ def retest(
     console.print(
         f"当前进度：首轮 {done} 对已投票（电池 {len(battery.tasks)} 条任务、"
         f"{len(battery.models)} 家模型）。\n\n"
-        "[bold]retest 属于 m2 里程碑，v0.1 尚未实现[/]：将从首轮随机抽约 "
+        "[bold]retest 属于 m2 里程碑，当前版本尚未实现[/]：将从首轮随机抽约 "
         f"{battery.retest_fraction:.0%} 的对重测并翻转盲序，输出重测一致率"
         "（个人信度分）与噪声任务警示。票仓格式已按 m2 预留 round 字段，"
         "升级后无需重跑首轮。"
@@ -307,24 +328,26 @@ def report(
         )
         raise typer.Exit(code=1)
     votes = _load_votes(store)
-    done = sum(1 for v in votes if v.round == 1)
+    done = sum(1 for v in votes if v.round == 1 and v.mode == "live")
     console.print(
         f"电池：{len(battery.tasks)} 条任务 × {len(battery.models)} 家模型；"
         f"首轮进度 {done} 对。"
     )
-    if done:
+    # 只有演示票时也要说明「它们不计入真实进度」，不能静默显示 0 对。
+    if any(v.round == 1 for v in votes):
         _print_run_summary(
             completed=done,
             total=len(round1_trials(battery)),
             voted_now=0,
             votes=votes,
             battery=battery,
+            mode="live",
         )
     snapshot = load_index_snapshot()
     status = "已抄录" if snapshot_is_filled(snapshot) else "未抄录（分歧表待 m2）"
     console.print(f"聚合榜单快照：{status}。")
     console.print(
-        "\n[bold]完整个人选型报告属 m2 里程碑，v0.1 尚未实现[/]：BT 个人排名、"
+        "\n[bold]完整个人选型报告属 m2 里程碑，当前版本尚未实现[/]：BT 个人排名、"
         "每类任务冠军、重测一致率信度分、噪声任务警示，以及与 "
         "Artificial Analysis 的 Intelligence Index 式聚合榜单的分歧表，"
         "将导出为 report.md / report.html。"

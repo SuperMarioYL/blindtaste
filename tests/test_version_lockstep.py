@@ -20,7 +20,10 @@ import json
 import re
 from pathlib import Path
 
+from typer.testing import CliRunner
+
 import blindtaste
+from blindtaste.cli import app
 
 REPO = Path(__file__).resolve().parent.parent
 VERSION = blindtaste.__version__
@@ -68,3 +71,17 @@ def test_changelog_documents_current_version() -> None:
     assert re.search(rf"^## {re.escape(VERSION)} - \d{{4}}-\d{{2}}-\d{{2}}$", changelog, re.M), (
         f"CHANGELOG.md 缺少 {VERSION} 的条目"
     )
+
+
+def test_cli_version_output_matches_package() -> None:
+    """``blindtaste --version`` 是用户唯一能直接读到的版本面，必须同源。"""
+    result = CliRunner().invoke(app, ["--version"])
+    assert result.exit_code == 0, result.output
+    assert result.output.strip() == f"blindtaste {VERSION}"
+
+
+def test_no_stale_capability_version_claims() -> None:
+    """用户可见的能力边界说明不能写死旧版本号（v0.1/v0.2 会随版本漂移）。"""
+    pinned = re.compile(r"v0\.\d+ 尚未实现")
+    for path in (REPO / "src").rglob("*.py"):
+        assert not pinned.search(path.read_text(encoding="utf-8")), path

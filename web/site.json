@@ -10,7 +10,7 @@
   "meta": {
     "visual_profile": "neon-particle",
     "demo_source": "docs/demo-results.json",
-    "implementation_version": "0.2.0"
+    "implementation_version": "0.3.0"
   },
   "hero": {
     "eyebrow": {
@@ -22,8 +22,8 @@
       "en": "Leaderboards can be farmed.\nYour taste cannot."
     },
     "sub": {
-      "zh": "BlindTaste 把改简历、写周报、PPT 大纲、翻译这些高频任务打包成 10 分钟终端盲测：逐对匿名 A/B 投票、票仓断点续跑，先看清你自己任务上的稳定偏好，再决定用哪个模型。v0.2 修复输入与状态的错误路径（能力仍是 m1：init + run）。",
-      "en": "BlindTaste packs your recurring tasks - resume edits, weekly reports, deck outlines, translation - into a 10-minute terminal blind test: vote on anonymous A/B pairs, resume anytime, and see your stable preference on your own tasks before picking a model. v0.2 hardens the input and state error paths (capability is still m1: init + run)."
+      "zh": "BlindTaste 把改简历、写周报、PPT 大纲、翻译这些高频任务打包成 10 分钟终端盲测：逐对匿名 A/B 投票、票仓断点续跑，先看清你自己任务上的稳定偏好，再决定用哪个模型。v0.3 修好三处会毁掉一次盲测的数据缺陷：单家模型的调用失败只跳过那一对、演示票不再混进真实统计、损坏的回答缓存自动重取（能力仍是 m1：init + run）。",
+      "en": "BlindTaste packs your recurring tasks - resume edits, weekly reports, deck outlines, translation - into a 10-minute terminal blind test: vote on anonymous A/B pairs, resume anytime, and see your stable preference on your own tasks before picking a model. v0.3 fixes three data defects that could ruin a tasting: one model's failure skips only its pair, demo votes no longer leak into real stats, and a corrupt answer cache is re-fetched (capability is still m1: init + run)."
     },
     "href": "#quickstart",
     "cta": {
@@ -71,8 +71,8 @@
         "en": "Append-only vault, resumable"
       },
       "body": {
-        "zh": "votes.jsonl 追加式落盘，按 trial_id 去重，Ctrl-C 之后重跑自动接上；trial 由电池内容指纹确定性生成，同一电池永远得到同一批对局。",
-        "en": "votes.jsonl is an append-only store deduped by trial id; Ctrl-C and re-run picks up exactly where you stopped. Trials derive deterministically from the battery fingerprint, so the same battery always yields the same pairs."
+        "zh": "votes.jsonl 追加式落盘，按 trial_id 去重，Ctrl-C 之后重跑自动接上；--demo 的模拟票单独标记，既不会让真实运行跳过那一对，也不计入真实进度与胜率。trial 由电池内容指纹确定性生成，同一电池永远得到同一批对局。",
+        "en": "votes.jsonl is an append-only store deduped by trial id; Ctrl-C and re-run picks up exactly where you stopped. Demo votes are tagged separately, so a real run never skips a pair because of them and they never count as real progress or win rate. Trials derive deterministically from the battery fingerprint, so the same battery always yields the same pairs."
       }
     }
   ],
@@ -162,8 +162,8 @@
           "en": "Configuration and limits"
         },
         "body": {
-          "zh": "key 粘贴到 ~/.blindtaste/keys.env（ZHIPU_API_KEY=…），状态目录可用 BLINDTASTE_HOME 或 --home 覆盖。v0.2 只修错误路径，能力仍是 m1：完整报告、重测一致率、噪声任务与榜单分歧表在 m2；--demo 的模拟回答不代表任何真实模型表现。",
-          "en": "Paste keys into ~/.blindtaste/keys.env (ZHIPU_API_KEY=...); state directory can be overridden via BLINDTASTE_HOME or --home. v0.2 fixes error paths only, still m1 capability: the full report, retest agreement, noise tasks and index disagreement land in m2; --demo answers represent no real model."
+          "zh": "key 粘贴到 ~/.blindtaste/keys.env（ZHIPU_API_KEY=…），状态目录可用 BLINDTASTE_HOME 或 --home 覆盖。v0.3 只修数据可信度，能力仍是 m1：完整报告、重测一致率、噪声任务与榜单分歧表在 m2；--demo 的模拟票单独标记，不代表任何真实模型表现，也不计入真实统计。",
+          "en": "Paste keys into ~/.blindtaste/keys.env (ZHIPU_API_KEY=...); state directory can be overridden via BLINDTASTE_HOME or --home. v0.3 hardens data integrity only, still m1 capability: the full report, retest agreement, noise tasks and index disagreement land in m2; --demo votes are tagged separately, represent no real model and never count as real stats."
         }
       }
     ]
@@ -272,12 +272,12 @@
   },
   "limitations": [
     {
-      "zh": "v0.2 只修错误路径，能力仍是 m1（init + run 盲测电池）；retest 重测一致率与 report 完整报告在 m2 交付。",
-      "en": "v0.2 fixes error paths only, still m1 capability (init + run blind battery); retest reliability and the full report land in m2."
+      "zh": "v0.3 只修数据可信度，能力仍是 m1（init + run 盲测电池）；retest 重测一致率与 report 完整报告在 m2 交付。",
+      "en": "v0.3 hardens data integrity only, still m1 capability (init + run blind battery); retest reliability and the full report land in m2."
     },
     {
-      "zh": "正式盲测需要各家官方 API key；--demo 的模拟回答不代表任何真实模型表现。",
-      "en": "Real tasting needs official API keys; --demo answers represent no real model."
+      "zh": "正式盲测需要各家官方 API key；--demo 的模拟票单独标记，不代表任何真实模型表现，也不计入真实统计。",
+      "en": "Real tasting needs official API keys; --demo votes are tagged separately, represent no real model and never count as real stats."
     },
     {
       "zh": "火山方舟（豆包）的 OpenAI 兼容性未验证，属 best-effort 接入。",

@@ -497,12 +497,15 @@ def test_cli_demo_run_end_to_end(store: SessionStore) -> None:
 
     report_result = runner.invoke(app, ["report"])
     assert report_result.exit_code == 0
-    assert "首轮进度 3 对" in report_result.output
+    # 演示票是模拟回答，不能算成用户自己的真实首轮进度。
+    assert "首轮进度 0 对" in report_result.output
+    assert "另有 3 张 --demo 模拟票不计入本次统计" in report_result.output
     assert "m2" in report_result.output
 
     retest_result = runner.invoke(app, ["retest"])
-    assert retest_result.exit_code == 0
-    assert "m2" in retest_result.output
+    # retest 只认真实盲测票：只有 --demo 模拟票时按「还没有首轮记录」干净退出。
+    assert retest_result.exit_code == 1
+    assert "还没有首轮盲测记录" in retest_result.output
 
 
 def test_cli_models_override_rejects_unknown(store: SessionStore) -> None:

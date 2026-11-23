@@ -12,7 +12,7 @@
 **Blind-test CN LLMs on your own tasks — resume edits, weekly reports, deck outlines, translation — with anonymous pairwise voting, and see your stable preference before picking a model.**
 
 <p>
-  <img src="https://img.shields.io/badge/version-0.2.0-blue" alt="version 0.2.0">
+  <img src="https://img.shields.io/badge/version-0.3.0-blue" alt="version 0.3.0">
   <img src="https://img.shields.io/badge/python-3.12+-3776AB" alt="python 3.12+">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
   <img src="https://img.shields.io/github/actions/workflow/status/SuperMarioYL/blindtaste/ci.yml?branch=main&label=ci" alt="ci status">
@@ -74,9 +74,9 @@ Zhipu's `glm-4-flash-250414` has a free tier, so one key is enough to run the wh
 blindtaste run
 ```
 
-Each pair shows the task and two anonymous answers side by side; vote with `a` / `b` / `tie`, and the models behind A/B are revealed immediately after. About 15 pairs; Ctrl-C anytime, re-running resumes exactly where you stopped. Want the interaction without keys first: `blindtaste run --demo --limit 2`.
+Each pair shows the task and two anonymous answers side by side; vote with `a` / `b` / `tie`, and the models behind A/B are revealed immediately after. About 15 pairs; Ctrl-C anytime, re-running resumes exactly where you stopped. Want the interaction without keys first: `blindtaste run --demo --limit 2` (demo votes are tagged separately and never count as real progress).
 
-> v0.1 (m1) ends here: `blindtaste retest` (random retest, flipped blind order, agreement score) and `blindtaste report` (reliability-scored personal report, md/html) land in m2; the current `report` command shows battery, round-1 progress and the vote tally.
+> v0.3 capability is still m1: `blindtaste retest` (random retest, flipped blind order, agreement score) and `blindtaste report` (reliability-scored personal report, md/html) land in m2; the current `report` command shows battery, round-1 progress and the vote tally.
 
 ## Recorded demo
 
@@ -100,7 +100,7 @@ For your own version, replay the commands in [docs/demo-results.json](docs/demo-
 Three invariants run through all of it:
 
 1. **The ballot shows only anonymous A/B.** The mapping from display side to real model is decided by the blind order (`blind_order`) and revealed only after you vote — preference forms before branding.
-2. **The vault is append-only.** Every vote is written immediately to `votes.jsonl` (self-describing: task, model mapping, blind order, pick, think time), deduped by `trial_id`; Ctrl-C and re-run picks up at the breakpoint.
+2. **The vault is append-only.** Every vote is written immediately to `votes.jsonl` (self-describing: task, model mapping, blind order, pick, think time, live/demo mode), deduped by `trial_id`; Ctrl-C and re-run picks up at the breakpoint. `--demo` votes are tagged `demo`, so a real run never skips a pair because of them and they never count as real progress or win rate.
 3. **Trials derive deterministically from the battery fingerprint.** The same tasks and models always produce the same pairs — across reinstalls, re-runs and machines; answer caching is keyed by (mode, model, task), so the same task never burns the API twice.
 
 ## Architecture
@@ -133,7 +133,7 @@ Task content (questions and the four kind templates) lives in [`src/blindtaste/t
 blindtaste init                                        # questionnaire -> battery
 blindtaste init --tasks examples/tasks.example.toml   # seed mode: skip the questionnaire
 blindtaste run                                         # tasting (~15 pairs, resumable)
-blindtaste run --demo --limit 2                        # offline demo: simulated answers, no API
+blindtaste run --demo --limit 2                        # offline demo: simulated answers, no API (demo votes tagged)
 blindtaste run --models glm-4-flash-250414,kimi-k3     # override models for this run
 blindtaste retest                                      # (m2) random retest, flipped order, reliability
 blindtaste report                                      # (m2 placeholder) progress and tally for now
@@ -173,12 +173,14 @@ When keys are missing, `run` lists the missing variables and the `keys.env` form
 
 ## Capabilities and limits
 
-| Capability | v0.2 (this release) | m2 (planned) |
+| Capability | v0.3 (this release) | m2 (planned) |
 | --- | :---: | :---: |
 | Questionnaire-built task battery (4 kinds + custom) | ✓ | |
 | Anonymous A/B tasting + post-vote reveal | ✓ | |
 | Append-only vote vault with resume | ✓ | |
 | Offline demo mode (`--demo`) | ✓ | |
+| Demo votes separated from live votes (live/demo mode) | ✓ | |
+| One model's failure skips only its pair / corrupt cache degrades to a miss | ✓ | |
 | Retest (random sample + flipped blind order) | — | ✓ |
 | Test-retest agreement score / noise-task warnings | — | ✓ |
 | Bradley-Terry personal ranking | — | ✓ |
@@ -186,7 +188,7 @@ When keys are missing, `run` lists the missing variables and the `keys.env` form
 
 Explicit limits:
 
-- `--demo` answers are deterministic simulations and represent no real model.
+- `--demo` answers are deterministic simulations and represent no real model; demo votes are tagged `demo` and never count as real round-1 progress, win rate or retest input.
 - The aggregate index snapshot (`src/blindtaste/data/aggregate_index_snapshot.json`) has null scores (not transcribed): the disagreement table lands in m2 and only means anything after you transcribe current numbers from a public board by hand — BlindTaste scrapes nothing.
 - Tasting requires official API keys; this repository provides and proxies none.
 
@@ -207,6 +209,7 @@ Pilot note: the v0.1 CLI already covers battery building and tasting collection;
 
 - [x] **m1 blind battery**: init questionnaire + run anonymous tasting + resumable vote vault + offline demo
 - [x] **v0.2 error-path fixes**: `--models` override deduped and requires two models, seed files and a corrupt vault fail cleanly, version lockstep test
+- [x] **v0.3 data-integrity fixes**: one model's failure skips only its pair, `--demo` votes separated from live votes, corrupt answer cache degrades to a miss, `--version` lockstep
 - [ ] **m2 retest and reliability**: `retest` random retest (flipped blind order), agreement score, noise-task warnings, `report` md/html export, disagreement table vs aggregate boards
 - [ ] **m3 report kit**: seed report "30 real workplace tasks, blind-tested: personal ranking and three disagreements with the Intelligence Index", Gitee mirror, PyPI release (`uvx blindtaste` one-liner)
 
@@ -222,7 +225,7 @@ Pilot note: the v0.1 CLI already covers battery building and tasting collection;
 
 ```bash
 uv venv && uv pip install -e ".[test]"
-pytest                      # 40 tests, model calls fully mocked — no network, no keys
+pytest                      # 49 tests, model calls fully mocked — no network, no keys
 ```
 
 Demo assets (SVG groups and the terminal GIF) are generated by [docs/render_presentation.py](docs/render_presentation.py) and [docs/demo.tape](docs/demo.tape); the palette comes from the renderer (`web/palette.json`).

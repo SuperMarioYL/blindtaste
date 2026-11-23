@@ -5,7 +5,9 @@
 - 票面只见匿名 A/B，投票后才揭晓模型；
 - trial_id 由电池内容指纹确定性派生，因此 ``run`` 中断后重跑会跳过已投
   票的对（票仓 ``votes.jsonl`` 按 trial_id 去重）；
-- 盲序（blind_order）决定哪侧模型显示为 A，重测轮会翻转盲序（m2）。
+- 盲序（blind_order）决定哪侧模型显示为 A，重测轮会翻转盲序（m2）；
+- 票面记录 mode（live/demo）：``--demo`` 的模拟回答只能算进演示票，不参与
+  真实投票的统计与续跑判定。
 
 回答缓存按 (mode, model, prompt) 键落盘：同一任务同一模型的回答在多个
 trial 间复用，不重复烧 API。
@@ -27,7 +29,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from .intake import Battery, TaskItem, battery_fingerprint, now_iso
-from .providers import ChatAdapter
+from .providers import ChatAdapter, ProviderError
 
 #: 首轮盲测的对数上限：约 10 分钟内可完成的量（来自产品定义）。
 ROUND1_MAX_PAIRS = 15
@@ -51,6 +53,10 @@ class Vote(BaseModel):
 
     ``models`` 记录显示侧到真实模型的映射（{"a": id, "b": id}），
     ``winner`` 是按 pick 解析后的胜者模型 id（平票为 None）。
+
+    ``mode`` 区分真实盲测（live）与 ``--demo`` 的模拟回答（demo）：两者
+    共用同一批 trial_id，但模拟票不能算作真实偏好，也不能让真实运行跳过
+    那一对。缺省 ``live`` 让旧票仓（无该字段）照常读取。
     """
 
     trial_id: str
@@ -63,6 +69,7 @@ class Vote(BaseModel):
     think_ms: int = Field(ge=0)
     winner: str | None
     voted_at: str
+    mode: str = "live"
 
 
 def home_dir(override: Path | None = None) -> Path:
@@ -85,7 +92,7 @@ def display_models(trial: Trial) -> dict[str, str]:
 
 
 def record_vote(
-    trial: Trial, pick: str, think_ms: int, *, round_: int = 1
+    trial: Trial, pick: str, think_ms: int, *, round_: int = 1, mode: str = "live"
 ) -> Vote:
     """把 (trial, 选择) 固化成自描述选票。"""
     if pick not in {"a", "b", "tie"}:
@@ -102,6 +109,7 @@ def record_vote(
         think_ms=think_ms,
         winner=None if pick == "tie" else sides[pick],
         voted_at=now_iso(),
+        mode=mode,
     )
 
 
@@ -213,11 +221,20 @@ class SessionStore:
     def load_answer(
         self, model_id: str, prompt: str, *, demo: bool
     ) -> str | None:
+        """读取缓存回答；任何读不出/结构不对的条目都当作 cache miss。
+
+        缓存是派生状态：写一半的 JSON（Ctrl-C、磁盘满）不该让下一次 run
+        直接抛栈，重新请求并覆盖即可修复。
+        """
         path = self.cache_dir / f"{self._cache_key(model_id, prompt, demo=demo)}.json"
         if not path.is_file():
             return None
-        record = json.loads(path.read_text(encoding="utf-8"))
-        return record.get("answer")
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        answer = record.get("answer") if isinstance(record, dict) else None
+        return answer if isinstance(answer, str) else None
 
     def save_answer(
         self, model_id: str, prompt: str, answer: str, *, demo: bool
@@ -235,10 +252,13 @@ class SessionStore:
 class RunResult:
     """一次 run 的结果：本轮新投的票 + 全局进度。"""
 
-    def __init__(self, voted: list[Vote], total_trials: int, remaining: int) -> None:
+    def __init__(
+        self, voted: list[Vote], total_trials: int, remaining: int, skipped: int = 0
+    ) -> None:
         self.voted = voted
         self.total_trials = total_trials
         self.remaining = remaining
+        self.skipped = skipped  # 因模型调用失败而跳过的对数（未落票，重跑会重试）
 
     @property
     def completed(self) -> int:
@@ -262,9 +282,17 @@ def run_session(
     ``vote_fn(trial, answer_a, answer_b)`` 负责提问并返回 ``(pick, think_ms)``；
     展示、缓存、落盘、揭晓都在本函数内完成，测试注入伪 vote_fn 即可全链路
     验证票仓。
+
+    单家模型的 API 调用失败（ProviderError）只跳过当前这一对：其余模型的对局
+    继续，票仓不写半成品，重跑会重试被跳过的那一对。
     """
+    mode = "demo" if demo else "live"
     trials = round1_trials(battery, max_pairs=max_pairs)
-    done_ids = {v.trial_id for v in store.load_votes() if v.round == 1}
+    done_ids = {
+        v.trial_id
+        for v in store.load_votes()
+        if v.round == 1 and v.mode == mode
+    }
     pending = [t for t in trials if t.id not in done_ids]
     console.print(
         f"\n[bold]第 1 轮盲测[/]：共 {len(trials)} 对，"
@@ -282,15 +310,24 @@ def run_session(
     label_by_id = {m.id: m.label for m in battery.models}
     to_vote = pending if limit is None else pending[:limit]
     voted: list[Vote] = []
+    skipped = 0
     for index, trial in enumerate(to_vote, start=1):
         task = task_by_id[trial.task_id]
         sides = display_models(trial)
-        answers = {
-            side: _fetch_answer(
-                store, adapters[model_id], task, demo=demo
+        try:
+            answers = {
+                side: _fetch_answer(
+                    store, adapters[model_id], task, demo=demo
+                )
+                for side, model_id in sides.items()
+            }
+        except ProviderError as exc:
+            skipped += 1
+            console.print(
+                f"[yellow]⚠ 跳过 {index}/{len(to_vote)} 这对：{exc}[/]\n"
+                "[dim]这一对没有落票，重跑会重试；其余模型的对局继续。[/]"
             )
-            for side, model_id in sides.items()
-        }
+            continue
         console.print(f"\n[bold]── 对 {index}/{len(to_vote)} · 任务 {task.id}[/]")
         console.print(
             Panel(task.prompt, title=f"任务（{task.kind}）", border_style="dim")
@@ -319,14 +356,14 @@ def run_session(
                     Panel(answers[side], title=f"回答 {side.upper()}", border_style=style)
                 )
         pick, think_ms = vote_fn(trial, answers["a"], answers["b"])
-        vote = record_vote(trial, pick, think_ms)
+        vote = record_vote(trial, pick, think_ms, mode=mode)
         store.append_vote(vote)
         voted.append(vote)
         console.print(
             f"[green]✓ 已记录[/] 揭晓：A = {label_by_id.get(sides['a'], sides['a'])}"
             f" · B = {label_by_id.get(sides['b'], sides['b'])}"
         )
-    return RunResult(voted, len(trials), len(pending) - len(voted))
+    return RunResult(voted, len(trials), len(pending) - len(voted), skipped)
 
 
 def _fetch_answer(

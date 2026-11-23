@@ -12,7 +12,7 @@
 **用你自己的任务盲测国产大模型：改简历、写周报、PPT 大纲、翻译，逐对匿名 A/B 投票，先看清你自己任务上的稳定偏好，再决定用哪个模型。**
 
 <p>
-  <img src="https://img.shields.io/badge/version-0.2.0-blue" alt="version 0.2.0">
+  <img src="https://img.shields.io/badge/version-0.3.0-blue" alt="version 0.3.0">
   <img src="https://img.shields.io/badge/python-3.12+-3776AB" alt="python 3.12+">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
   <img src="https://img.shields.io/github/actions/workflow/status/SuperMarioYL/blindtaste/ci.yml?branch=main&label=ci" alt="ci status">
@@ -74,9 +74,9 @@ DEEPSEEK_API_KEY=sk-yyy
 blindtaste run
 ```
 
-每对先显示任务与两份并排的匿名回答，输入 `a` / `b` / `tie` 投票，投票后立即揭晓 A/B 背后的模型。约 15 对，Ctrl-C 随时中断，重跑自动从上次进度继续。不配 key 想先体验交互：`blindtaste run --demo --limit 2`。
+每对先显示任务与两份并排的匿名回答，输入 `a` / `b` / `tie` 投票，投票后立即揭晓 A/B 背后的模型。约 15 对，Ctrl-C 随时中断，重跑自动从上次进度继续。不配 key 想先体验交互：`blindtaste run --demo --limit 2`（演示票单独标记，不计入真实进度）。
 
-> v0.1（m1）到此为止：`blindtaste retest`（随机重测 + 盲序翻转 + 重测一致率信度分）与 `blindtaste report`（带信度评分的个人选型报告 md/html）在 m2 交付；当前 `report` 命令展示电池、首轮进度与票面统计。
+> v0.3 的能力边界仍是 m1：`blindtaste retest`（随机重测 + 盲序翻转 + 重测一致率信度分）与 `blindtaste report`（带信度评分的个人选型报告 md/html）在 m2 交付；当前 `report` 命令展示电池、首轮进度与票面统计。
 
 ## 录屏演示
 
@@ -100,7 +100,7 @@ blindtaste run
 三条不变量贯穿全程：
 
 1. **票面只见匿名 A/B**。展示侧与真实模型的映射由盲序（`blind_order`）决定，投票后才揭晓——偏好先于品牌形成。
-2. **票仓追加式落盘**。每张票立即写入 `votes.jsonl`（自描述：任务、模型映射、盲序、选择、思考时长），按 `trial_id` 去重，Ctrl-C 之后重跑从断点继续。
+2. **票仓追加式落盘**。每张票立即写入 `votes.jsonl`（自描述：任务、模型映射、盲序、选择、思考时长、live/demo 模式），按 `trial_id` 去重，Ctrl-C 之后重跑从断点继续；`--demo` 的模拟票标记为 `demo`，不会让真实运行跳过那一对，也不参与真实进度与胜率。
 3. **trial 由电池内容指纹确定性生成**。同一份任务与模型永远得到同一批对局，重装、重跑、换机器结果一致；回答缓存按（模式, 模型, 任务）复用，同一任务不会重复烧 API。
 
 ## 架构
@@ -133,7 +133,7 @@ blindtaste run
 blindtaste init                                        # 问卷建电池
 blindtaste init --tasks examples/tasks.example.toml   # 种子模式：跳过问卷，只选模型
 blindtaste run                                         # 盲测（约 15 对，可中断续跑）
-blindtaste run --demo --limit 2                        # 离线演示：模拟回答、不调 API、限投 2 对
+blindtaste run --demo --limit 2                        # 离线演示：模拟回答、不调 API、限投 2 对（演示票单独标记）
 blindtaste run --models glm-4-flash-250414,kimi-k3     # 本次覆盖参测模型
 blindtaste retest                                      # （m2）随机重测、盲序翻转、信度分
 blindtaste report                                      # （m2 占位）当前展示进度与票面统计
@@ -173,12 +173,14 @@ blindtaste report                                      # （m2 占位）当前�
 
 ## 能力与边界
 
-| 能力 | v0.2（本版） | m2（规划） |
+| 能力 | v0.3（本版） | m2（规划） |
 | --- | :---: | :---: |
 | 问卷生成任务电池（4 类 + 自定义） | ✓ | |
 | 匿名 A/B 盲选 + 投票后揭晓 | ✓ | |
 | 票仓 JSONL 断点续跑 | ✓ | |
 | 离线演示模式（`--demo`） | ✓ | |
+| 演示票与真实票分离（live/demo 模式） | ✓ | |
+| 单家模型调用失败只跳过该对 / 损坏缓存降级重取 | ✓ | |
 | 重测（随机抽样 + 盲序翻转） | — | ✓ |
 | 重测一致率信度分 / 噪声任务警示 | — | ✓ |
 | Bradley-Terry 个人排名 | — | ✓ |
@@ -186,7 +188,7 @@ blindtaste report                                      # （m2 占位）当前�
 
 明确的边界：
 
-- `--demo` 的回答是确定性生成的模拟内容，不代表任何真实模型的表现。
+- `--demo` 的回答是确定性生成的模拟内容，不代表任何真实模型的表现；演示票标记为 `demo`，不计入真实首轮进度、胜率表与 retest。
 - 聚合榜单快照（`src/blindtaste/data/aggregate_index_snapshot.json`）分数字段当前为 null（未抄录）：分歧表在 m2 交付，且只在你从公开榜单页人工抄录当期数值后才有意义——BlindTaste 不抓取任何榜单数据。
 - 盲测需要各家官方 API key；本仓库不提供、不代理任何 key。
 
@@ -207,6 +209,7 @@ blindtaste report                                      # （m2 占位）当前�
 
 - [x] **m1 盲测电池**：init 问卷 + run 匿名盲选 + 票仓断点续跑 + 离线演示
 - [x] **v0.2 错误路径修复**：`--models` 覆盖去重且至少两家、种子文件与损坏票仓干净报错、版本 lockstep 测试
+- [x] **v0.3 数据可信度修复**：单家模型调用失败只跳过该对、`--demo` 模拟票与真实票分离、损坏的回答缓存降级重取、`--version` lockstep
 - [ ] **m2 重测与信度**：`retest` 随机重测（盲序翻转）、重测一致率信度分、噪声任务警示、`report` 导出 md/html、与聚合榜单的分歧表
 - [ ] **m3 发布套件**：种子报告《30 个真实职场任务盲测：个人排名与 Intelligence Index 的三处分歧》、Gitee 镜像、PyPI 发布（`uvx blindtaste` 一键运行）
 
@@ -222,7 +225,7 @@ blindtaste report                                      # （m2 占位）当前�
 
 ```bash
 uv venv && uv pip install -e ".[test]"
-pytest                      # 40 项测试，模型调用全部替身，无网络、无 key
+pytest                      # 49 项测试，模型调用全部替身，无网络、无 key
 ```
 
 演示资产（SVG 图组与终端 GIF）由 [docs/render_presentation.py](docs/render_presentation.py) 与 [docs/demo.tape](docs/demo.tape) 生成，调色板来自渲染器（`web/palette.json`）。

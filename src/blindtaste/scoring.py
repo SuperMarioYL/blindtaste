@@ -85,7 +85,7 @@ def bradley_terry(votes: list[Vote]) -> list[tuple[str, float]]:
     """
     raise MilestoneNotImplemented(
         "Bradley-Terry 个人排名在 m2（blindtaste retest + report）交付；"
-        "v0.1 先用 tally_votes/kind_winrates 查看票面统计。"
+        "当前版本先用 tally_votes/kind_winrates 查看票面统计。"
     )
 
 
